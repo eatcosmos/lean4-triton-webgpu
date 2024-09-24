@@ -363,4 +363,15 @@ tt.func @test(%arg0: tensor<32x32xf32, #mma>) -> tensor<32xf32, #triton_gpu.slic
                            "mlir::triton::gpu::TritonGPUDialect"];
 }
 
+def TritonIntelGPUScheduleOps : Pass<"tritonintelgpu-schedule-ops", "mlir::ModuleOp"> {
+  let summary = "";
+
+  let description = [{
+  }];
+
+  let dependentDialects = ["mlir::triton::TritonDialect",
+                           "mlir::triton::gpu::intel::TritonIntelGPUDialect",
+                           "mlir::triton::gpu::TritonGPUDialect"];
+}
+
 #endif // TRITON_INTEL_GPU_PASSES
