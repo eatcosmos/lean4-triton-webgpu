@@ -41,10 +41,8 @@ llvm.func @triton_gen.split_barrier() {
 // CHECK-DAG: llvm.func spir_funccc @_Z29sub_group_clustered_reduce_orij(i32, i32) -> i32 attributes {convergent, no_unwind, will_return}
 // CHECK-DAG: llvm.func spir_funccc @_Z30sub_group_clustered_reduce_xorij(i32, i32) -> i32 attributes {convergent, no_unwind, will_return}
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 32>>
-} {
-  llvm.func @triton_gen.sub_group_reduce() {
+module {
+  llvm.func @triton_gen.sub_group_reduce() attributes {intel_reqd_sub_group_size = 32 : i32} {
     %0 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: [[VAL:%.*]] = llvm.mlir.constant(0 : i32) : i32
     // CHECK: [[SIZE:%.*]] = llvm.mlir.constant(16 : i32) : i32
@@ -82,10 +80,8 @@ module attributes {
 // CHECK-DAG: llvm.func spir_funccc @_Z31sub_group_non_uniform_reduce_ori(i32) -> i32
 // CHECK-DAG: llvm.func spir_funccc @_Z32sub_group_non_uniform_reduce_xori(i32) -> i32
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 16>>
-} {
-  llvm.func @triton_gen.sub_group_reduce() {
+module {
+  llvm.func @triton_gen.sub_group_reduce() attributes {intel_reqd_sub_group_size = 16 : i32} {
     %0 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: [[VAL:%.*]] = llvm.mlir.constant(0 : i32) : i32
     // CHECK: llvm.call spir_funccc @_Z32sub_group_non_uniform_reduce_addi([[VAL]]) {{.*}} : (i32) -> i32
@@ -124,10 +120,8 @@ module attributes {
 // CHECK-DAG: llvm.func spir_funccc @_Z39sub_group_non_uniform_scan_inclusive_ori(i32) -> i32 attributes {convergent, no_unwind, will_return}
 // CHECK-DAG: llvm.func spir_funccc @_Z40sub_group_non_uniform_scan_inclusive_xori(i32) -> i32 attributes {convergent, no_unwind, will_return}
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 16>>
-} {
-  llvm.func @triton_gen.sub_group_scan() {
+module {
+  llvm.func @triton_gen.sub_group_scan() attributes {intel_reqd_sub_group_size = 16 : i32} {
     %0 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: [[VAL:%.*]] = llvm.mlir.constant(0 : i32) : i32
     // CHECK: llvm.call spir_funccc @_Z40sub_group_non_uniform_scan_exclusive_addi([[VAL]]) {{.*}} : (i32) -> i32

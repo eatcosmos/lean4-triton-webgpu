@@ -65,9 +65,10 @@ struct GPUSubgroupReduceOpLowering
   LogicalResult
   matchAndRewrite(mlir::gpu::SubgroupReduceOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
+    auto func = op->getParentOfType<LLVM::LLVMFuncOp>();
     rewriter.replaceOpWithNewOp<TritonGEN::SubGroupReduceOp>(
         op, op.getResult().getType(), op.getValue(),
-        convertReduceKind(op.getOp()), TritonGEN::getSubgroupSize(op));
+        convertReduceKind(op.getOp()), func.getIntelReqdSubGroupSize().value());
     return success();
   }
 

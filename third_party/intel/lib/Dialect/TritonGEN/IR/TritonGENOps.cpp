@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "intel/include/Dialect/TritonGEN/IR/TritonGENDialect.h"
-#include "mlir/Dialect/SPIRV/IR/TargetAndABI.h"
 #include "mlir/Dialect/Utils/StaticValueUtils.h"
 #include "triton/Tools/Sys/GetEnv.hpp"
 #include "llvm/ADT/STLExtras.h"
@@ -65,13 +64,17 @@ static LogicalResult verifySIMDBlockTy(Operation *op, VectorType vecTy) {
 //===----------------------------------------------------------------------===//
 
 LogicalResult TritonGEN::SubGroupReduceOp::verify() {
-  spirv::TargetEnvAttr attr = spirv::lookupTargetEnv(*this);
-  if (!attr)
-    return this->emitOpError("expecting valid target env attribute");
+  auto func = getOperation()->getParentOfType<LLVM::LLVMFuncOp>();
+  if (!func)
+    return emitOpError("expected to be in a llvm.func operation");
+  auto subgroupSize = func.getIntelReqdSubGroupSize();
+  if (!subgroupSize)
+    return emitOpError("expecting attribute ")
+           << func.getIntelReqdSubGroupSizeAttrName().getValue();
 
-  if (getSize() < 1 || getSize() > TritonGEN::getSubgroupSize(*this) ||
+  if (getSize() < 1 || getSize() > subgroupSize.value() ||
       !llvm::isPowerOf2_32(getSize()))
-    return this->emitOpError(
+    return emitOpError(
         "expecting size to be a power of 2 between 1 and subgroup size");
 
   return success();

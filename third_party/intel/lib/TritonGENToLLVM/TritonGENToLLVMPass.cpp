@@ -641,7 +641,8 @@ struct TritonSubGroupReduceLowering
     SmallVector<Type> argTypes{valTy};
     SmallVector<bool> argIsUnsigned{false};
     SmallVector<Value> args{val};
-    bool useCluster = (getSubgroupSize(op) != op.getSize());
+    auto func = op->getParentOfType<LLVM::LLVMFuncOp>();
+    bool useCluster = (func.getIntelReqdSubGroupSize().value() != op.getSize());
 
     std::string fnName = "sub_group_";
     fnName += useCluster ? "clustered_" : "non_uniform_";

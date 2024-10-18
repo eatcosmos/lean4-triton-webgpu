@@ -1,11 +1,9 @@
 // RUN: triton-opt -convert-gpu-to-tritongen %s | FileCheck %s
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 16>>
-} {
+module {
 
 gpu.module @kernels {
-  llvm.func @triton_gen.sub_group_reduce() {
+  llvm.func @triton_gen.sub_group_reduce() attributes {intel_reqd_sub_group_size = 16 : i32} {
     %0 = llvm.mlir.constant(0.0 : f32) : f32
     %1 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: triton_gen.sub_group_reduce add %0 {size = 16} : f32

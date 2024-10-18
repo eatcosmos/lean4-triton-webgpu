@@ -23,10 +23,8 @@ llvm.func @triton_gen.split_barrier_wait() {
 
 // -----
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 32>>
-} {
-  llvm.func @triton_gen.sub_group_reduce() {
+module {
+  llvm.func @triton_gen.sub_group_reduce() attributes {intel_reqd_sub_group_size = 32 : i32} {
     // CHECK-LABEL: triton_gen.sub_group_reduce
     %0 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: triton_gen.sub_group_reduce add %0 {size = 16} : i32
@@ -49,10 +47,8 @@ module attributes {
 
 // -----
 
-module attributes {
-  spirv.target_env = #spirv.target_env<#spirv.vce<v1.4, [Kernel, Addresses, GroupNonUniformShuffle, Int64], []>, #spirv.resource_limits<subgroup_size = 32>>
-} {
-  llvm.func @triton_gen.sub_group_scan() {
+module {
+  llvm.func @triton_gen.sub_group_scan() attributes {intel_reqd_sub_group_size = 32 : i32} {
     // CHECK-LABEL: triton_gen.sub_group_scan
     %0 = llvm.mlir.constant(0 : i32) : i32
     // CHECK: triton_gen.sub_group_scan add %0 {kind = exclusive} : i32
