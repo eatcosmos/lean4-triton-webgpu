@@ -752,6 +752,7 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
       performSubGroupTranspose(op, srcLayout, dstLayout, adaptor, rewriter);
       return success();
     }
+    // TODO(jlebar): Implement me.
     return failure();
   }
 
