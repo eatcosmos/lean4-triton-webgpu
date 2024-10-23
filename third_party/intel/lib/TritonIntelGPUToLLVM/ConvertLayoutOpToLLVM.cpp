@@ -486,8 +486,20 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
     constexpr std::size_t laneIndex = 0;
     constexpr std::size_t registerIndex = 1;
     int32_t size = conversion->getInDimSize(kLane);
+    std::vector<std::vector<int32_t>> registerBases =
+      buildBasis(size, registerIndex);
+    {
+      // Populate register bases for N > 8.
+      std::vector<int32_t> base(2);
+      for (int32_t i = registerBases.back()[registerIndex] * 2,
+	     n = conversion->getInDimSize(kRegister); i < n;
+           i *= 2) {
+        base.front() = i;
+        registerBases.push_back(base);
+      }
+    }
     std::array<std::pair<StringAttr, std::vector<std::vector<int32_t>>>, 2>
-        bases{{{kRegister, buildBasis(size, registerIndex)},
+      bases{{{kRegister, std::move(registerBases)},
                {kLane, buildBasis(size, laneIndex)}}};
     std::array<StringAttr, 2> outDimNames{kRegister, kLane};
     return conversion == LinearLayout(bases, outDimNames);
