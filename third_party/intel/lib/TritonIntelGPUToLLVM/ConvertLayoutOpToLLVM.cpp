@@ -620,11 +620,11 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
                                    OpAdaptor adaptor,
                                    ConversionPatternRewriter &rewriter) const {
     // If the operation is a supported sub-group transposition, perform via SLM.
-    if (isSubGroupTranspose(srcLayout, dstLayout) &&
-        isSupportedSubGroupTranspose(op, adaptor)) {
-      performSubGroupTranspose(op, srcLayout, dstLayout, adaptor, rewriter);
-      return success();
-    }
+    // if (isSubGroupTranspose(srcLayout, dstLayout) &&
+    //     isSupportedSubGroupTranspose(op, adaptor)) {
+    //   performSubGroupTranspose(op, srcLayout, dstLayout, adaptor, rewriter);
+    //   return success();
+    // }
     // TODO(jlebar): Implement me.
     return failure();
   }
