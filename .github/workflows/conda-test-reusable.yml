@@ -91,6 +91,7 @@ jobs:
         shell: bash --noprofile --norc -eo pipefail {0}
         run: |
           scripts/install-${{ inputs.env_manager }}.sh --python-version ${{ inputs.python_version }}
+          exit 1
           echo $HOME/miniforge3/bin >>$GITHUB_PATH
 
       - name: Print inputs

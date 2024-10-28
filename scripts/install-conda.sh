@@ -10,6 +10,7 @@ install_env() {
     mkdir -p $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
     ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
     ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl/CL $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
+    ls -l $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
 }
 
 print_env_info() {
