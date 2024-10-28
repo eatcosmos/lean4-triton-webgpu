@@ -8,7 +8,7 @@ from .. import __version__
 from ..runtime.autotuner import OutOfResources
 from ..runtime.cache import get_cache_manager, get_dump_manager, get_override_manager
 from ..runtime.driver import driver
-from ..tools.disasm import get_sass
+from ..tools.disasm import get_sass, get_spvdis
 # TODO: this shouldn't be here
 from .code_generator import ast_to_ttir
 from pathlib import Path
@@ -333,6 +333,8 @@ class AsmDict(dict):
 
         if key == "sass":
             value = get_sass(self["cubin"])
+        if key == "spvdis":
+            value = get_spvdis(self["spv"])
         else:
             raise KeyError("Unknown key: '%s'" % key)
 
