@@ -351,9 +351,14 @@ struct PrefetchOpConversion
     SmallVector<int64_t> tensorShape{shapeRef.begin(), shapeRef.end()};
 
     if (!memoryRowMajor) {
+#if 0
+      rewriter.eraseOp(op);
+      return success();
+#else
       // Swap the shape to make it row major and then get the tiling
       // size base on row major shape.
       std::swap(tensorShape[0], tensorShape[1]);
+#endif
     }
 
     unsigned numWarps = triton::gpu::TritonGPUDialect::getNumWarps(mod);
@@ -407,6 +412,7 @@ struct PrefetchOpConversion
           offsetBaseY] =
         getValuesFromBlockPointerStruct(adaptor.getPtr(), rewriter);
 
+    llvm::errs() << "baseWidth: " << baseWidth << "\nbaseHeight: " << baseHeight << "\ncolStride: " << colStride << "\nrowStride: " << rowStride << "\n";
     if (!memoryRowMajor) {
       // Swap the width/height and strides to the row major.
       std::swap(baseWidth, baseHeight);
@@ -455,6 +461,9 @@ struct PrefetchOpConversion
             /*tile_height*/ tileHeightInElem,
             /*v_blocks*/ vBlocks,
             /*cache_opt*/ TritonGEN::LoadCacheControl::L1C_L3C);
+        if (row == 0 && col == 0) {
+          llvm::errs() << "Prefetch op for row major = " << memoryRowMajor << ": " << newOp << "\n";
+        }
         if (failed(newOp.verify())) {
           // Explicitly invoke verifier because `triton_gen` ops are immediately
           // lowered further to a builtin call.
@@ -733,6 +742,9 @@ struct LoadOpConversion
               /*vnni_transform*/
               (usePackedType && !isOperandA && !isTransposeRequired &&
                eltTy.getIntOrFloatBitWidth() != 32));
+          if (outer == 0 && rep == 0 && k == 0) {
+            llvm::errs() << "Generating load op for idx " << opIdx << "\n:" << load2dOp << "\n";
+          }
           if (failed(load2dOp.verify())) {
             // Explicitly invoke verifier because `triton_gen` ops are
             // immediately lowered further to a builtin call.
@@ -763,7 +775,9 @@ struct LoadOpConversion
                 DenseI32ArrayAttr attr = rewriter.getDenseI32ArrayAttr(indices);
                 Value loadVal = rewriter.create<LLVM::ShuffleVectorOp>(
                     loc, packedDPASOperandType, load2dOp, load2dOp, attr);
-
+                if (outer == 0 && rep == 0 && k == 0) {
+                  llvm::errs() << "Generating shuffle for op " << opIdx << "\n:" << loadVal << "\n";
+                }
                 // Save the decomposed vals to the map;
                 if (opIdx == 0) {
                   loadVals[{outer * packedRowNum * numLoadPerOutRepCluster +
