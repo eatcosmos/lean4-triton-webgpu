@@ -1,5 +1,9 @@
 #!/bin/bash
 
+link_sycl() {
+    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl $HOME/miniforge3/envs/triton/$1
+}
+
 install_env() {
     export PATH="$HOME/miniforge3/bin:$PATH"
     conda create -n triton --override-channels -c conda-forge python=$python_version.*
@@ -8,12 +12,8 @@ install_env() {
     ln -snf /usr/include/level_zero $HOME/miniforge3/envs/triton/bin/../x86_64-conda-linux-gnu/sysroot/usr/include/level_zero
     find /usr -name libze_\* -exec cp -n {} $HOME/miniforge3/envs/triton/lib \;
     mkdir -p $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
-    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
-    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl/CL $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
-    set -vx
-    ls -l $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
-    ls -l /cache/conda-conda-py-89317242ddce5f336c1b75792f74d46fb370dd3eeb285cee5b57d49f1844f28f-6/lib/python3.9/site-packages/triton/backends/intel/lib
-    (cd /opt/intel/oneapi/compiler/2024.1/include/sycl; pwd -P)
+    link_sycl lib/python$python_version/site-packages/triton/backends/intel/include
+    link_sycl x86_64-conda-linux-gnu/sysroot/usr/include
 }
 
 print_env_info() {
