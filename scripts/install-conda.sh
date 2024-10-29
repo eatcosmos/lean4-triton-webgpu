@@ -1,7 +1,9 @@
 #!/bin/bash
 
 link_sycl() {
-    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl $HOME/miniforge3/envs/triton/$1
+    mkdir -p $HOME/miniforge3/envs/triton/$1
+    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl $HOME/miniforge3/envs/triton/$1/
+    ln -snf /opt/intel/oneapi/compiler/2024.1/include/sycl/CL $HOME/miniforge3/envs/triton/$1/
 }
 
 install_env() {
