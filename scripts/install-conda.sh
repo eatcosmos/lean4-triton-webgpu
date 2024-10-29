@@ -12,6 +12,7 @@ install_env() {
     ln -snf /usr/include/level_zero $HOME/miniforge3/envs/triton/bin/../x86_64-conda-linux-gnu/sysroot/usr/include/level_zero
     find /usr -name libze_\* -exec cp -n {} $HOME/miniforge3/envs/triton/lib \;
     mkdir -p $HOME/miniforge3/envs/triton/lib/python$python_version/site-packages/triton/backends/intel/include
+    set -vx
     link_sycl lib/python$python_version/site-packages/triton/backends/intel/include
     link_sycl x86_64-conda-linux-gnu/sysroot/usr/include
 }
@@ -25,4 +26,4 @@ script_dir=$(dirname "$0")
 source "$script_dir/env-util.sh"
 
 install_env
-print_env_info
+#print_env_info
