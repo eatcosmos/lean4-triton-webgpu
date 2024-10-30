@@ -218,8 +218,8 @@ public:
     ArrayRef<unsigned> repCluster = dpasEncoding.getRepCluster();
     for (int k = 0; k < repK; ++k)
       for (int m = 0; m < repM; ++m)
-        for (int n = 0; n < repN; ++n)
-          for (int repRow = 0; repRow < repCluster[0]; ++repRow)
+        for (int repRow = 0; repRow < repCluster[0]; ++repRow)
+          for (int n = 0; n < repN; ++n)
             for (int repCol = 0; repCol < repCluster[1]; ++repCol)
               generateDPASOp(m * repCluster[0] + repRow,
                              n * repCluster[1] + repCol, k);
