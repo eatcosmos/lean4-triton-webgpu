@@ -248,11 +248,14 @@ public:
 
       rewriter.replaceOp(op, bitcast(load, resType));
     } else if constexpr (std::is_same_v<OpType, ttgi::PrefetchOp>) {
-      if (transpose)
-        std::swap(offsetX, offsetY);
+#if 1
+      if (transpose) {
+        std::swap(offsetX, offsetY); // TODO: remove? 
+      }
+#endif 
       auto newOp = rewriter.create<TritonGEN::Matrix2DBlockPrefetchOp>(
           loc, base, surfaceW, surfaceH, surfaceP, offsetX, offsetY, dataSize,
-          blockWidth, blockHeight, vBlks, TritonGEN::LoadCacheControl::L1C_L3C);
+          blockWidth, blockHeight, vBlks, transpose, TritonGEN::LoadCacheControl::L1C_L3C);
       VERIFY_OPERATION(newOp)
 
       rewriter.eraseOp(op);

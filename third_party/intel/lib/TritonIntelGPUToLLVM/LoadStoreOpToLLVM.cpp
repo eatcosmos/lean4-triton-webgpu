@@ -412,11 +412,18 @@ struct PrefetchOpConversion
           offsetBaseY] =
         getValuesFromBlockPointerStruct(adaptor.getPtr(), rewriter);
 
-    llvm::errs() << "baseWidth: " << baseWidth << "\nbaseHeight: " << baseHeight << "\ncolStride: " << colStride << "\nrowStride: " << rowStride << "\n";
     if (!memoryRowMajor) {
       // Swap the width/height and strides to the row major.
       std::swap(baseWidth, baseHeight);
-      std::swap(colStride, rowStride);
+      // std::swap(colStride, rowStride);
+    }
+  
+    unsigned originalElemBits = elemSizeInBits;
+    if (!memoryRowMajor) {
+      // adjust the block io parameter to align HW's limitations on
+      // transposing load.
+      tileWidthInElem = tileWidthInElem / (32 / originalElemBits);
+      elemSizeInBits = 32;
     }
 
     baseWidth = mul(baseWidth, i64_val(eltTy.getIntOrFloatBitWidth() / 8));
@@ -424,9 +431,25 @@ struct PrefetchOpConversion
 
     baseHeight = trunc(i32_ty, baseHeight);
 
-    Value rowStrideInBytes =
-        mul(rowStride, i64_val(eltTy.getIntOrFloatBitWidth() / 8));
-    rowStrideInBytes = trunc(i32_ty, rowStrideInBytes);
+    Value pitchInBytes =
+        mul(memoryRowMajor ? rowStride : colStride, i64_val(eltTy.getIntOrFloatBitWidth() / 8));
+    pitchInBytes = trunc(i32_ty, pitchInBytes);
+
+    auto llPrintf = [&](StringRef msg, ValueRange args,
+                ConversionPatternRewriter &rewriter,
+                int *formatStrByteCount = nullptr) {
+      assert(!msg.empty() && "printf with empty string not supported");
+      llvm::SmallString<64> msgNewline(msg);
+      msgNewline.push_back('\n');
+      msgNewline.push_back('\0');
+      Value msgValue = LLVM::intel::addStringToModule(
+          UnknownLoc::get(rewriter.getContext()), rewriter, "printfFormat_",
+          msgNewline, TritonGEN::TritonGENMemorySpace::kUniformConstant);
+      targetInfo.printf(rewriter, msgValue, msgNewline.size_in_bytes(), args);
+      if (formatStrByteCount)
+        *formatStrByteCount = msgNewline.size_in_bytes();
+      return msgValue;
+    };
 
     for (int row = 0; row < numReps[0]; ++row) {
       for (int col = 0; col < numReps[1]; ++col) {
@@ -448,21 +471,39 @@ struct PrefetchOpConversion
         offsetY = urem(offsetY, i32_val(tensorShape[0]));
         offsetY = add(offsetY, offsetBaseY);
 
+        if (!memoryRowMajor)  {
+          std::swap(offsetX, offsetY);
+          // adjust the block io parameter to align HW's limitations on
+          // transposing load.
+          offsetX = udiv(offsetX, i32_val(32 / originalElemBits));
+        }
+
+#if 1
+        static int i = 0;
+        if (!memoryRowMajor && i++ < 1) {
+          llvm::errs() << "Tile size: " << tileWidthInElem << ", " << tileHeightInElem << "\n";
+          llvm::errs() << "elem size in bits: " << elemSizeInBits << "\n";
+          llPrintf("(%i %i):\n\toffsets: %i %i\n\tbase size: %i %i", {warpId, multiDimWarpId[1], trunc(i32_ty, offsetX), trunc(i32_ty, offsetY), baseWidth, baseHeight}, rewriter);
+        }
+#endif
+
         auto newOp = rewriter.create<TritonGEN::Matrix2DBlockPrefetchOp>(
             loc,
             /*ptr*/ base,
             /*base_width*/ baseWidth,
             /*base_height*/ baseHeight,
-            /*base_pitch*/ rowStrideInBytes,
+            /*base_pitch*/ pitchInBytes,
             /*x*/ trunc(i32_ty, offsetX),
             /*y*/ trunc(i32_ty, offsetY),
             /*elem_size_in_bits*/ elemSizeInBits,
             /*tile_width*/ tileWidthInElem,
             /*tile_height*/ tileHeightInElem,
             /*v_blocks*/ vBlocks,
+            /*tranpose*/ !memoryRowMajor,
             /*cache_opt*/ TritonGEN::LoadCacheControl::L1C_L3C);
         if (row == 0 && col == 0) {
           llvm::errs() << "Prefetch op for row major = " << memoryRowMajor << ": " << newOp << "\n";
+          // llPrintf("testing 1234 %i", {trunc(i32_ty, offsetY)}, rewriter);
         }
         if (failed(newOp.verify())) {
           // Explicitly invoke verifier because `triton_gen` ops are immediately

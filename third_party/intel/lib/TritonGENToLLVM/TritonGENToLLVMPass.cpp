@@ -495,7 +495,7 @@ createGenISA2DBlockPrefetch(TritonGEN::Matrix2DBlockPrefetchOp op,
                           i32_val(op.getTileWidth()),
                           i32_val(op.getTileHeight()),
                           i32_val(op.getVBlocks()),
-                          i1_val(false), // transpose
+                          i1_val(op.getTranspose()), // transpose
                           i1_val(false), // vnniTransform
                           i32_val(static_cast<int>(op.getCacheControl()))};
 
@@ -953,6 +953,13 @@ struct TritonMatrix2DBlockPrefetchLowering
                   ConversionPatternRewriter &rewriter) const override {
     MLIRContext *ctx = rewriter.getContext();
     Location loc = op->getLoc();
+
+    if (op.getTranspose()) {
+      LLVM::CallOp call = createGenISA2DBlockPrefetch(op, rewriter);
+      rewriter.replaceOp(op, call);
+      return success();
+    }
+
     std::string fnName = "intel_sub_group_2d_block_prefetch_";
     fnName += std::to_string(op.getElemSizeInBits()) + "b_" +
               std::to_string(op.getTileHeight()) + "r" +
