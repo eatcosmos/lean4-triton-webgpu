@@ -23,27 +23,38 @@ TRANSPOSE_A = os.getenv('TRANSPOSE_A', '0') == '1'
 TRANSPOSE_B = os.getenv('TRANSPOSE_B', '0') == '1'
 use_xetla = not (TRANSPOSE_A or TRANSPOSE_B)
 
-
 @triton.autotune(
     configs=[
-        triton.Config(
-            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [1, 2, 3]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2, 3]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 8, 'BLOCK_SIZE_N': 512, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 1, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2, 3]
+        triton.Config({'BLOCK_SIZE_M': BM, 'BLOCK_SIZE_N': BN, 'BLOCK_SIZE_K': BK, 'GROUP_SIZE_M': GM, 'grf_mode': 'large'},
+            num_stages=s, num_warps=32) \
+            for s in [2, 3] \
+            for BM in [8, 16, 32, 64, 128, 256] \
+            for BN in [1024, 2048, 4096] \
+            for BK in [16, 32, 64] \
+            for GM in [1, 4] \
     ],
     key=['M', 'N', 'K'],
 )
+#@triton.autotune(
+#    configs=[
+#        triton.Config(
+#            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
+#            num_stages=s, num_warps=32) for s in [1, 2, 3]
+#    ] + [
+#        triton.Config(
+#            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
+#            num_stages=s, num_warps=32) for s in [2, 3]
+#    ] + [
+#        triton.Config(
+#            {'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
+#            num_stages=s, num_warps=32) for s in [2]
+#    ] + [
+#        triton.Config(
+#            {'BLOCK_SIZE_M': 8, 'BLOCK_SIZE_N': 512, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 1, 'grf_mode': 'large'},
+#            num_stages=s, num_warps=32) for s in [2, 3]
+#    ],
+#    key=['M', 'N', 'K'],
+#)
 @triton.jit
 def matmul_kernel_with_block_pointers(
         # Pointers to matrices
@@ -91,25 +102,13 @@ def matmul_kernel_with_block_pointers(
 # pylint: disable=unused-argument
 @triton.autotune(
     configs=[
-        triton.Config(
-            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2, 3]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 64, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 4, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 8, 'BLOCK_SIZE_N': 512, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 1, 'grf_mode': 'large'},
-            num_stages=s, num_warps=32) for s in [2]
-    ] + [
-        triton.Config(
-            {'BLOCK_SIZE_M': 8, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 64, 'GROUP_SIZE_M': 1, 'grf_mode': 'large'},
-            num_stages=s, num_warps=4) for s in [2]
+        triton.Config({'BLOCK_SIZE_M': BM, 'BLOCK_SIZE_N': BN, 'BLOCK_SIZE_K': BK, 'GROUP_SIZE_M': GM, 'grf_mode': 'large'},
+            num_stages=s, num_warps=32) \
+            for s in [2, 3] \
+            for BM in [8, 16, 32, 64, 128, 256] \
+            for BN in [1024, 2048, 4096] \
+            for BK in [16, 32, 64] \
+            for GM in [1, 4] \
     ],
     key=['M', 'N', 'K'],
 )
@@ -225,28 +224,8 @@ def get_shapes(B, M, N, K, transpose_a, transpose_b):
         # argument names to use as an x-axis for the plot
         x_names=['B', 'M', 'K', 'N'],
         # different possible values for `x_name`
-        x_vals=[[1, 1024 * i, 1024 * i, 1024 * i] for i in [1, 2, 4, 8]] +  #
-        [  #
-            [1, 1, 5120, 13824],  #
-            [1, 4, 4096, 12288],  #
-            [1, 512, 8192, 8192],  #
-            [1, 512, 8192, 32768],  #
-            [1, 512, 32768, 8192],  #
-            [1, 1024, 16384, 8192],  #
-            [1, 1024, 28672, 8192],  #
-            [1, 3072, 4096, 3072],  # FIXME: Remove this case when gemm_streamk_benchmark can get better performance
-            [1, 4096, 16384, 8192],  #
-            [1, 8192, 16384, 1024],  #
-            [1, 8192, 16384, 4096],  #
-            [1, 16384, 1024, 8192],  #
-            [1, 16384, 4096, 8192],  #
-            [1, 16384, 8192, 1024],  #
-            [1, 16384, 8192, 4096],  #
-            [4, 32768, 128, 4096],  #
-            [4, 32768, 4096, 128],  #
-            [32, 4096, 4096, 128],  #
-            [4096, 8, 128, 16384],  #
-            [4096, 8, 16384, 128]
+        x_vals=[
+            [4096, 8, 128, 16384],
         ],
         line_arg='provider',
         # argument name whose value corresponds to a different line in the plot
